@@ -26,7 +26,7 @@ g = ggplot(tab, aes(y=negLogPval, logFC) ) +
     geom_text_repel(data= tab %>% 
                       filter(abs(logFC) > lfc & negLogPval > -log10(pval)) %>% 
                       group_by(logFC > 0) %>% 
-                      top_n( topn, (  abs(logFC) ) ),
+                      top_n( topn, (  abs(logFC) + abs(negLogPval)*.2 ) ),
                     aes(label=Gene, size = 2) ) +
                     theme(legend.position="none")
 
@@ -78,7 +78,7 @@ DEannotate = function(res, map){
   res$band = map$band[mapmatch]
   
   if ( grepl("ENSMUSG", rownames(res)[1] )==1 ) {
-    res$hsapiens_gene = map$hsapiens_homolog_ensembl_gene[mapmatch]
+    res$hsapiens_gene = map$hsapiens_homolog_associated_gene_name[mapmatch]
     res$hsapiens_ensembl = map$hsapiens_homolog_ensembl_gene[mapmatch]
   } else if ( grepl("ENSG", rownames(res)[1] )==1 ) {
     res$mouse_gene = map$mmusculus_homolog_associated_gene_name[mapmatch]
@@ -89,3 +89,25 @@ DEannotate = function(res, map){
   res= as.data.frame(res)
 }
 
+
+# 
+# 
+# countsWrap = function(geneName, Group){
+#   counts = normaliz
+#   library(ggplot2)
+#   th <- theme(text = element_text(size=20, family = "Helvetica" ), panel.grid.major = element_blank(), panel.grid.minor = element_blank() )
+#   ID = rownames(res)[res$geneName == geneName]
+#   d = data.frame(count = counts[ ,colnames(counts) == ID] )
+#   
+#   d$Group = metadata[ colnames(metadata) == Group, ]
+# 
+#   g = ggplot(d, aes(x=Group , y=count, fill = Group)) +
+#     geom_boxplot( outlier.shape=NA ) +
+#     geom_point(position=position_jitter(w=0.1,h=0), size = 3) +
+#     ggtitle(paste( geneName, ID) ) +
+#     #   scale_fill_manual(values=c( "#E69F00", "#56B4E9")) +
+#     theme_bw() +
+#     th
+#   
+#   return(g)
+# }
