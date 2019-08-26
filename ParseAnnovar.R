@@ -1,6 +1,6 @@
 ### Function to parse annovar output
 
-ParseAnnovar = function( samp, exac_filt = 0.0001, af_filt = 0.1, ad_filt=3, dp_filt = 10, GERMLINE = FALSE){
+ParseAnnovar = function( samp, exac_filt = 0.0001, af_filt = 0.1, ad_filt=3, dp_filt = 10, GERMLINE = FALSE, RNA = FALSE) {
   library(dplyr)
   library(stringr)
   options(stringsAsFactors = FALSE)
@@ -19,9 +19,13 @@ ParseAnnovar = function( samp, exac_filt = 0.0001, af_filt = 0.1, ad_filt=3, dp_
   AD = unlist(lapply(stringr::str_split(df[ ,varcol], ":"), "[[", 2))
   AD = as.numeric(unlist(lapply(str_split(AD, ","), "[[", 2)))
   ##TODO extract AF for indels/multiallelic
-  AF[grepl(",", AF) ] = 1.1
+  AF[grepl(",", AF) ] = 99
   AF= as.numeric(AF)
   DP = as.numeric( unlist(lapply(stringr::str_split(df[ ,varcol], ":"), "[[", 4)))
+  if ( RNA == TRUE ) {
+    DP = as.numeric( unlist(lapply(stringr::str_split(df[ ,varcol], ":"), "[[", 3)))
+    AF= rep(99, length(AF))
+    }
   
   if ( GERMLINE ==  TRUE){
     AF = unlist(lapply(stringr::str_split(df$INFO, ";"), "[[", 2))
@@ -49,7 +53,7 @@ ParseAnnovar = function( samp, exac_filt = 0.0001, af_filt = 0.1, ad_filt=3, dp_
    # print(paste("AD Filters", dpdrop, "Variants", "(", round(dpdrop/nrow(df) *100, 2), "% of variants )"))
     
     df = df %>% 
-    dplyr::filter(ExAC_ALL < exac_filt & AF > af_filt & Alt_AD > ad_filt & DP > dp_filt) %>% 
+    dplyr::filter(ExAC_ALL < exac_filt & AF >= af_filt & Alt_AD >= ad_filt & DP >= dp_filt) %>% 
       dplyr::filter(ExonicFunc.ensGene != "synonymous SNV" )
     
     df$ExonicFunc.ensGene[df$ExonicFunc.ensGene == "." & df$Func.ensGene == "splicing"] = "splicing"
