@@ -26,7 +26,7 @@ g = ggplot(tab, aes(y=negLogPval, logFC) ) +
     geom_text_repel(data= tab %>% 
                       filter(abs(logFC) > lfc & negLogPval > -log10(pval)) %>% 
                       group_by(logFC > 0) %>% 
-                      top_n( topn, (  abs(logFC) + abs(negLogPval)*.2 ) ),
+                      top_n( topn, (  abs(logFC)/2 + abs(negLogPval) ) ),
                     aes(label=Gene, size = 2) ) +
                     theme(legend.position="none")
 
