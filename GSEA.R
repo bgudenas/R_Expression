@@ -39,14 +39,16 @@ GSEA = function(ranked, GO_file ) {
   keepsUp = fgsea::collapsePathways(filtRes[filtRes$NES > 1.5, ], myGO, rnks,  nperm = 500)
   keepsDown = fgsea::collapsePathways(filtRes[filtRes$NES < -1.5, ], myGO, rnks,  nperm = 500)
   keeps = c(keepsUp$mainPathways, keepsDown$mainPathways)
-  filtRes = filtRes[ !is.na(match(filtRes$pathway, keeps)), ]
+  filtRes = filtRes[ !is.na(match(filtRes$pathway, keeps)), ] %>% 
+    arrange(desc(NES))
+  
   
   filtResTidy = rbind(head(filtRes, n = 10), tail(filtRes, n = 10))
   filtResTidy$Enrichment = ifelse(filtResTidy$NES > 0, "Up-regulated", "Down-regulated")
   colvec =  c("blue3", "red3")
   names(colvec) = c("Down-regulated", "Up-regulated")
   
-  g = ggplot(filtResTidy, aes(reorder(pathway, NES), NES)) +
+  g = ggplot(filtResTidy,  aes(reorder(pathway, NES), NES)) +
     geom_col(aes(fill = Enrichment)) +
     scale_fill_manual(values= colvec) +
     coord_flip() +
