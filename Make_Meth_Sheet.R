@@ -1,10 +1,13 @@
 
 # 
- dir = "./Methylation/IDATS/ETMRlikeDICER/"
- outname = "./Methylation/IDATS/ETMRlikeDICER/newRefs_meta.csv"
- group = "450k"
+ #dir = "./Methylation/IDATS/ETMRlikeDICER/"
+ #outname = "./Methylation/IDATS/ETMRlikeDICER/newRefs_meta.csv"
+ #group = "450k"
 
 makeMethSheet = function(dir, group, outname){
+  #dir = "./Methylation/IDATS/ETMRlikeDICER/"
+  #outname = "./Methylation/IDATS/ETMRlikeDICER/newRefs_meta.csv"
+  #group = "450k"
   idats = list.files(dir)
   idats = idats[grepl("idat", idats)]
   
@@ -20,4 +23,4 @@ makeMethSheet = function(dir, group, outname){
   write.csv(df, outname, quote = FALSE, row.names = FALSE)
 }
 
-makeMethSheet(dir, group, outname)  
+#makeMethSheet(dir, group, outname)  
