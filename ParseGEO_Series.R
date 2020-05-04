@@ -1,6 +1,6 @@
 
 
-series_matrix_path = "/Users/bgudenas/Desktop/Projects/Datasets/Human/Expression/Microarray/MB/GSE37382/GSE37382_series_matrix.txt"
+#series_matrix_path = "/Users/bgudenas/Desktop/Projects/Datasets/Human/Expression/Microarray/MB/GSE37382/GSE37382_series_matrix.txt"
 
 ParseGEO_Microarray = function(series_matrix_path ) {
   options(stringsAsFactors = FALSE)
