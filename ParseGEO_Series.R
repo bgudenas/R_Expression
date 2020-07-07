@@ -1,17 +1,21 @@
 
+# pathMBs = "../Datasets/Bulk_Expression/Microarray/Human/GSE37382_MB_1_1_ST/GSE37382_series_matrix.txt"
+# MBs = ParseGEO_Microarray(series_matrix_path = pathMBs,
+#                           platform = "affy_hugene_1_0_st_v1", 
+#                           species_dataset = "hsapiens_gene_ensembl",
+#                           outname = "GSE37382_MB_1_1_ST_Proccesed"
+# )
 
-#series_matrix_path = "/Users/bgudenas/Desktop/Projects/Datasets/Human/Expression/Microarray/MB/GSE37382/GSE37382_series_matrix.txt"
 
-ParseGEO_Microarray = function(series_matrix_path ) {
+ParseGEO_Microarray = function(series_matrix_path, platform = NULL, species_dataset = NULL, outname ) {
   options(stringsAsFactors = FALSE)
   all = read.table(series_matrix_path, fill = TRUE, sep = "\t",header = FALSE )
   summary = as.character(all[ which(all[ ,1] == "!Series_summary"), 2 ])
   design =  as.character(all[ which(all[ ,1] == "!Series_overall_design"), 2 ])
-  meta = read.table(series_matrix_path, fill = TRUE, sep = "\t", skip = 25, header = FALSE )
-  markExpr = which(meta[ ,1] == "ID_REF") + 25
+  markMeta = which(all[,1] == "!Sample_title") ## Line metadata tbale begins
+  meta = read.table(series_matrix_path, fill = TRUE, sep = "\t", skip = markMeta, header = FALSE )
+  markExpr = which(meta[ ,1] == "ID_REF") + markMeta - 1 ## Line expression matrix begins
   datExpr = read.table(series_matrix_path, fill = TRUE, sep = "\t", skip = markExpr, header = TRUE, row.names = 1) 
-  
-  
   
   which(meta[ ,1] == "!Sample_characteristics_ch1" )
   samp_chars = c()
@@ -33,14 +37,84 @@ ParseGEO_Microarray = function(series_matrix_path ) {
   if ( is.null(dim(samp_chars)) ) {
    colnames(meta)[ncol(meta)] = unique(unlist(lapply(stringr::str_split(samp_chars, ":"), "[[", 1)))
   }
+  for ( i in 1:ncol(meta)) {
+   if ( any(grepl(": ", meta[ ,i] )) ) {
+    meta[ ,i] = stringr::str_trim(unlist(lapply(stringr::str_split(meta[ ,i], ":") , "[[", 2 )))
+   }
+  }
   
+  if ( !is.null(platform)) {
+    
+    fil = paste0("../Annots/Microarray/", platform, ".rds")
+    if (!file.exists(fil)){
+      mart = biomaRt::useMart("ensembl", dataset = species_dataset )
+      map = biomaRt::getBM(mart = mart, attributes=c(platform, "external_gene_name" ), filters = platform, values = rownames(datExpr) )
+      saveRDS(map, file = fil)
+    } else { map = readRDS( fil )
+    print(paste("PROBE ID's =", fil ))
+    }
+  }
   
-  outfile = list("Expr" = datExpr, "Metadata" = meta, "Summary" = summary, "Design" = design)
+  ## map[ ,1] should be probe ID and map[ ,2] is gene Name
+  genes = map[ ,2][ match(rownames(datExpr), map[ ,1])]
+  datExpr = datExpr[!is.na(genes), ]
+  genes =genes[!is.na(genes)]
+  
+  gMat = matrix(nrow = length(unique(genes)), ncol = ncol(datExpr), data = 0)
+  rownames(gMat) = unique(genes)
+  colnames(gMat) = colnames(datExpr)
+  
+  for ( i in rownames(gMat)){
+    probeID = map[ ,1][ !is.na(match(map[ ,2], i )) ]
+    
+   gMat[rownames(gMat) == i, ] = colMeans(datExpr[rownames(datExpr) %in% probeID, ])
+     
+  }
+
+  outfile = list("Expr" = gMat, "Metadata" = meta, "Summary" = summary, "Design" = design)
+  print(outname)
+  
+  print(lapply(outfile, dim ))
+  
+  saveRDS(outfile, file.path( dirname(series_matrix_path), paste0(outname, ".rds" )))
   
   
 }
 
 
-mega = ParseGEO_Microarray(series_matrix_path = series_matrix_path)
 
-mega = ParseGEO_Microarray("./Public_RBmodel/GSE124537-GPL6246_series_matrix.txt")
+# Merge multiple GEO series -----------------------------------------------
+
+merge_GEO = function( Series ){ 
+  ## slow but easy to do
+  meta = Series[[1]]$Metadata[ ,1:3]
+  colnames(meta) = c("GEO_ID", "Series_ID", "Group")
+  meta$Batch = 1
+  
+  Expr = Series[[1]]$Expr %>% 
+    as.data.frame() %>% 
+    tibble::rownames_to_column( "Gene")
+  
+  for ( i in 2:length(Series)){
+    newMeta =  Series[[i]]$Metadata[ ,1:3]
+    colnames(newMeta) = c("GEO_ID", "Series_ID", "Group")
+    newMeta$Batch = i
+    meta = rbind(meta, newMeta[ ,c(1:3, ncol(newMeta))] )
+  }
+  
+  
+  for ( i in 2:length(Series)){
+    datExpr =  Series[[i]]$Expr %>% 
+      as.data.frame() %>% 
+      tibble::rownames_to_column( "Gene")
+    
+    Expr = inner_join(Expr, datExpr, by = "Gene" )
+  }
+  
+  
+  Expr = Expr %>% 
+    tibble::column_to_rownames("Gene")
+  
+  return(list("datExpr" = Expr, "Annots" = meta ))  
+}
+
