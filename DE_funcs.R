@@ -2,7 +2,18 @@
 ## 6/7/19
 ## Functions to help DESeq2 workflow
 
-PlotVolcano = function(tab, fc, pval, Name, intGenes=NULL, topn=7){
+
+PlotVolcano = function(tab, fc, pval, Name, intGenes=NULL, topn=7 ){
+  #' Plot a volcano plot
+#' @param tab data.frame
+#' @param fc numeric
+#' @param pval numeric
+#' @param Name character
+#' @param intGenes character
+#' @param topn numeric
+#' @return ggplot object
+#' @export
+  options(ggrepel.max.overlaps = Inf)
   #tab = data.frame(logFC = res$log2FoldChange, negLogPval = -log10(res$padj), Gene = res$geneName)
   #g = plotVolcano(tab, 1.5, 0.1, "Het vs WT", intGenes="CRX")
   library(dplyr)
@@ -32,9 +43,24 @@ g = ggplot(tab, aes(y=negLogPval, logFC) ) +
 
 if ( is.null(intGenes) == FALSE ){
   
+  if (length(intGenes) > 1){
+    tab$Label = tab$Gene
+    tab$Label[!(tab$Gene %in% c(intGenes))] = ""
+    g = ggplot(tab, aes(y=negLogPval, logFC, label = Label) ) +
+      geom_point(col=colvec, size = 2) +
+      theme_bw() +
+      xlab(expression(Log[2]~fold~change)) +
+      ylab(expression(-Log[10]~pvalue)) +
+      ggtitle(Name) +
+      theme(text = element_text(size=20)) +
+      theme(plot.title = element_text(hjust = 0.5)) +
+      geom_text_repel( max.time=5)
+  } else {
+  
   g = g + geom_text_repel(data= tab %>% 
                         filter(Gene == intGenes), 
                      aes(label=Gene, size = 2), fontface = "bold")
+  }
 }
 
 return(g)
@@ -44,21 +70,22 @@ return(g)
 countsWrap = function(geneName, Group){
   ID = rownames(res)[res$geneName == geneName]
   d = data.frame(count = counts[ ,colnames(counts) == ID] )
-  d$Group = metadata %>%  dplyr::select(Group)
+  d$Group = metadata %>%  dplyr::select(Group) %>%  unlist() %>%  as.character()
   
-  pval = res$padj[res$geneName == geneName]
-  if (pval < 0.05 ){
-    pval = "P-value < 0.05"
-  } else { pval = "" }
+  # pval = res$padj[res$geneName == geneName]
+  # if (pval < 0.05 ){
+  #   pval = "P-value < 0.05"
+  # } else { pval = "" }
   
   g = ggplot(d, aes(x=Group , y=count, fill = Group)) +
     geom_boxplot( outlier.shape=NA ) +
-    geom_point(position=position_jitter(w=0.1,h=0), size = 3) +
-    ggtitle(paste( geneName, ID) ) +
+    geom_point(position=position_jitter(w=0.1,h=0), size = 2) +
+    ggtitle(paste( geneName ) ) +
     #   scale_fill_manual(values=c( "#E69F00", "#56B4E9")) +
     theme_bw() +
     th +
-    annotate("text", x = 1, y = max(d$count)*.9, label = pval, size = 6 )
+    ylab("log2 Counts")
+  #+  annotate("text", x = 1, y = max(d$count)*.9, label = pval, size = 6 )
   
   return(g)
 }
@@ -68,7 +95,7 @@ DEannotate = function(res, map){
   # res should be result from DESeq2 
   # map should be annotable from biomaRt
   
-  res = as.data.frame( res[!is.na(res$padj), ] )
+  res = as.data.frame( res[!is.na(res$log2FoldChange), ] )
   mapmatch = match(rownames(res), map$ensembl_gene_id)
   res$geneName =  map$external_gene_name[ mapmatch]
   res$description = map$description[ mapmatch]
