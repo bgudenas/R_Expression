@@ -2,6 +2,18 @@
 ## 6/7/19
 ## Functions to help DESeq2 workflow
 
+Label_genes = function(gene_mat, map){
+  gene_mat = as.data.frame(gene_mat)
+  gene_mat$Gene = map$external_gene_name[match(rownames(gene_mat), map$ensembl_gene_id)]
+  gene_mat = gene_mat[gene_mat$Gene != "", ]
+  gene_mat = gene_mat[!is.na(gene_mat$Gene), ]
+  gene_mat = gene_mat[!duplicated(gene_mat$Gene) & !duplicated(gene_mat$Gene, fromLast = TRUE), ]
+  rownames(gene_mat) = gene_mat$Gene
+  gene_mat = gene_mat[ ,-ncol(gene_mat)]
+  print( gene_mat[1:4, 1:2])
+  return(gene_mat)
+}
+
 
 PlotVolcano = function(tab, fc, pval, Name, intGenes=NULL, topn=7 ){
   #' Plot a volcano plot
