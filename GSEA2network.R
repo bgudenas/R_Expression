@@ -18,7 +18,7 @@ GSEA2network = function(fgseaRes, GO, outname, minMod = 3 ){
   library(dplyr)
   fgseaRes$Length =0
   for (i in 1:nrow(fgseaRes)){
-    fgseaRes$Length[i] = length(unlist(GO[names(myGO) == fgseaRes$pathway[i] ]))
+    fgseaRes$Length[i] = length(unlist(GO[names(GO) == fgseaRes$pathway[i] ]))
   }
   fgseaRes = fgseaRes[ ,colnames(fgseaRes) != "leadingEdge"] ## remove this column if present since fgsea stores as list
   
@@ -30,7 +30,7 @@ GSEA2network = function(fgseaRes, GO, outname, minMod = 3 ){
   for ( i in 1:nrow(fgseaRes)) {
     genesI =  unlist(GO[names(GO) == fgseaRes$pathway[i] ])
     for (j in 1:nrow(fgseaRes)) {
-      genesJ = unlist(GO[names(myGO) == fgseaRes$pathway[j] ])
+      genesJ = unlist(GO[names(GO) == fgseaRes$pathway[j] ])
       overlap = sum(!is.na(match(genesI, genesJ )))
       jacc_coeff = overlap / length(unique(c(genesI, genesJ) ))  ## num overlaps / unique genes in sets
       adjMat[i,j] = jacc_coeff
@@ -88,7 +88,7 @@ GSEA2network = function(fgseaRes, GO, outname, minMod = 3 ){
   ## Cluster nodes using dynamic tree cut, for colors
   distMat = as.dist(1 - adjMat)  ## 1 - jaccards coef = jaccards distance
   dendro = hclust(distMat, method = "average" )
-  clust = dynamicTreeCut::cutreeDynamicTree( dendro, minModuleSize = minMod,  deepSplit = TRUE)
+  clust = dynamicTreeCut::cutreeDynamicTree( dendro, minModuleSize = minMod,  deepSplit = FALSE)
   print(table(clust) )
   fgseaRes$Colors = WGCNA::labels2colors(clust)
   
@@ -100,6 +100,7 @@ GSEA2network = function(fgseaRes, GO, outname, minMod = 3 ){
   fgseaRes$RName = fgseaRes$pathway
   fgseaRes$RName[ is.na(match(fgseaRes$pathway, keeps$pathway))] = ""
   fgseaRes$Colors[fgseaRes$Colors == "black"] = "gold" ## avoid black nodes for plotting
+  fgseaRes$Colors[fgseaRes$Colors == "grey"] = "gray" 
   fgseaRes$NES = abs(fgseaRes$NES)
   
 write.table(fgseaRes,  paste0("./GSEAnet/", outname, "_Nodes.txt") , sep = "\t", row.names = FALSE, quote = FALSE)

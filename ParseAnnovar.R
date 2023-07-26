@@ -7,12 +7,15 @@ ParseAnnovar = function( samp, exac_filt = 0.0001, af_filt = 0.1, ad_filt=3, dp_
   if (!file.exists(samp)){
     stop(paste(samp, " does not exist"))
   }
-  df =  read.table( samp, sep = "\t", fill = TRUE )
+  df =  read.table( samp, sep = "\t", fill = TRUE, check.names = FALSE )
   sampID = stringr::str_split( basename(samp), "\\." )[[1]][1]
   varcol = colnames(df) == sampID
   if (sum(varcol) == 0 ){
-    sampID = str_replace_all(sampID, "-", ".") 
-    varcol = colnames(df) == sampID
+   # sampID = str_replace_all(sampID, "-", ".") 
+    varcol = colnames(df) == str_replace_all(sampID, "-", ".")
+  }
+  if (sum(varcol) == 0 ){
+    varcol = as.logical(adist(colnames(df),sampID) <= 3)
   }
   AF = unlist(lapply(stringr::str_split(df[ ,varcol], ":"), "[[", 3))
   
@@ -39,7 +42,7 @@ ParseAnnovar = function( samp, exac_filt = 0.0001, af_filt = 0.1, ad_filt=3, dp_
     DP =as.numeric( unlist(lapply(stringr::str_split(df[, ncol(df) ], ":"), "[[", 3)) )
   }
   
-    df$AF=AF
+  df$AF=AF
   df$Alt_AD = AD
   df$DP = DP
 
