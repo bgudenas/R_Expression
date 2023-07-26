@@ -25,7 +25,9 @@ ParseGEO_Microarray = function(series_matrix_path, platform = NULL, species_data
   }
   samp_chars = samp_chars[-1, ]
   if (!is.null(dim(samp_chars))){
-  colnames(samp_chars) =  unique(unlist(lapply(lapply(samp_chars, FUN = function(x) lapply(unlist(stringr::str_split(x, ":")),"[[", 1)), "[[", 1 )))
+  newnames = unique(unlist(lapply(lapply(samp_chars, FUN = function(x) lapply(unlist(stringr::str_split(x, ":")),"[[", 1)), "[[", 1 )))
+  newnames = newnames[newnames != ""]
+  colnames(samp_chars) =  newnames
   } else { names(samp_chars) = unique(unlist(lapply(stringr::str_split(samp_chars, ":"), "[[", 1)))
   
   }
@@ -39,7 +41,11 @@ ParseGEO_Microarray = function(series_matrix_path, platform = NULL, species_data
   }
   for ( i in 1:ncol(meta)) {
    if ( any(grepl(": ", meta[ ,i] )) ) {
-    meta[ ,i] = stringr::str_trim(unlist(lapply(stringr::str_split(meta[ ,i], ":") , "[[", 2 )))
+     
+    drop_word = unique(unlist(lapply(stringr::str_split(meta[ ,i], ":") , "[[", 1 )))
+    drop_word = drop_word[drop_word != ""]
+    meta[ ,i] = stringr::str_remove_all(string = meta[ ,i], pattern = drop_word)
+    meta[ ,i] = stringr::str_remove_all(string = meta[ ,i], pattern = ": ")
    }
   }
   
